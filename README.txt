@@ -13,7 +13,7 @@ Features
 - Given a tracking number, check its transit history, delivery status, and
   delivery date
 
-- Create shipping labels in GIF, PDF, HTML, or EPS (thermal printer) format
+- Create shipping labels in GIF, PDF, HTML, or EPL (thermal printer) format
 
 
 Installation
@@ -67,7 +67,7 @@ Quickstart
     }
     weight = 10  # in lbs
 
-    # Create the shipment. Use file_format='EPS' for a thermal-printer-compatible EPS
+    # Create the shipment. Use file_format='EPL' for a thermal-printer-compatible EPL
     shipment = ups.create_shipment(from_addr, to_addr, dimensions, weight, file_format='GIF')
 
     # Print information about our shipment
