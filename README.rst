@@ -40,7 +40,7 @@ Create a UPSConnection object, which gives you access to common UPS methods:
                         shipper_number,  # Optional if you are not creating a shipment
                         debug=True)      # Use the UPS sandbox API rather than prod
 
-Check the delivery date of a package. Returns `None` if it has not been delivered:
+Check the delivery date of a package.
 
 .. code-block:: python
 
@@ -66,7 +66,7 @@ Create shipment and save shipping label as GIF file:
         'state': 'DC',
         'country': 'US',
         'postal_code': '20500',
-        'phone': '202456-1111'
+        'phone': '2024561111'
     }
     dimensions = {  # in inches
         'length': 1,
