@@ -7,7 +7,8 @@ setup(
     author_email='jay@classicspecs.com',
     url='http://github.com/classicspecs/ClassicUPS/',
     packages=['ClassicUPS'],
-    description='Library integrating with the UPS API',
+    description='Usable UPS Integration in Python',
+    long_description=open('README.rst').read(),
     keywords=['UPS'],
     install_requires=[
         'dict2xml == 1.0',

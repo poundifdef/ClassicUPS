@@ -10,10 +10,9 @@ the most common shipping-related common tasks.
 Features
 --------
 
-- Given a tracking number, check its transit history, delivery status, and
-  delivery date
+- Track delivery status of tracking number
 
-- Create shipping labels in GIF, PDF, HTML, or EPL (thermal printer) format
+- Create prepaid shipping labels in GIF or EPL (thermal printer) format
 
 
 Installation
@@ -21,27 +20,32 @@ Installation
 
 Installation is easy:
 
+.. code-block:: bash
     $ pip install ClassicUPS
-
 
 Quickstart
 ----------
 
+Create a UPSConnection object, which gives you access to common UPS methods:
+
+.. code-block:: python
     from ClassicUPS.ups import UPSConnection
 
-    # Obtain credentials from the UPS website
+    # Credentials obtained from the UPS website
     ups = UPSConnection(license_number,
                         user_id,
                         password,
                         shipper_number,  # Optional if you are not creating a shipment
-                        debug=True)  # Use the UPS sandbox API rather than prod
+                        debug=True)      # Use the UPS sandbox API rather than prod
 
+Check the delivery date of a package. Returns `None` if it has not been delivered:
 
-    # Check the delivery date of a package. Returns `None` if it has not been delivered
-    print  ups.tracking_info('1Z12345E0291980793').delivered
+.. code-block:: python
+    print ups.tracking_info('1Z12345E0291980793').delivered
 
+Create shipment and save shipping label as GIF file:
 
-    # Create shipment and save shipping label as GIF file
+.. code-block:: python
     from_addr = {
         'name': 'Google',
         'address1': '1600 Amphitheatre Parkway',
