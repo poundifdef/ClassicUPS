@@ -9,7 +9,6 @@ import urllib
 
 from binascii import a2b_base64
 from datetime import datetime
-from xhtml2pdf import pisa
 
 
 class UPSConnection(object):
@@ -252,37 +251,3 @@ class Shipment(object):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
         binary = a2b_base64(raw_epl)
         fd.write(binary)
-
-    def save_html(self, output_directory):
-        if self.file_format == 'GIF':
-        # TODO: if file format is not GIF some sort of exception
-
-            gif_path = os.path.join(output_directory, 'label' + self.tracking_number + '.gif')
-            html_path = os.path.join(output_directory, self.tracking_number + '.html')
-
-            gif_fd = open(gif_path, 'wb')
-            raw_gif = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-            binary = a2b_base64(raw_gif)
-            gif_fd.write(binary)
-            gif_fd.close()
-
-            html_fd = open(html_path, 'wb')
-            raw_html = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['HTMLImage']
-            binary = a2b_base64(raw_html)
-            html_fd.write(binary)
-            html_fd.close()
-
-
-    def save_pdf(self, fd):
-        if self.file_format == 'GIF':
-        # TODO: if file format is not GIF some sort of exception
-
-            tmp_path = tempfile.mkdtemp()
-            self.save_html(tmp_path)
-            html_path = os.path.join('file://' + tmp_path, self.tracking_number + '.html')
-
-            pdf = pisa.CreatePDF(urllib.urlopen(html_path), fd, log_warn=1,
-                                 log_err=1, path=html_path,
-                                 link_callback=pisa.pisaLinkLoader(html_path).getFileName)
-
-            shutil.rmtree(tmp_path)
