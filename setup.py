@@ -24,3 +24,5 @@ setup(
         'Development Status :: 4 - Beta'
     ]
 )
+
+# To update pypi: `python setup.py register sdist bdist_wininst upload`
