@@ -21,6 +21,7 @@ Installation
 Installation is easy:
 
 .. code-block:: bash
+
     $ pip install ClassicUPS
 
 Quickstart
@@ -29,6 +30,7 @@ Quickstart
 Create a UPSConnection object, which gives you access to common UPS methods:
 
 .. code-block:: python
+
     from ClassicUPS.ups import UPSConnection
 
     # Credentials obtained from the UPS website
@@ -41,11 +43,13 @@ Create a UPSConnection object, which gives you access to common UPS methods:
 Check the delivery date of a package. Returns `None` if it has not been delivered:
 
 .. code-block:: python
+
     print ups.tracking_info('1Z12345E0291980793').delivered
 
 Create shipment and save shipping label as GIF file:
 
 .. code-block:: python
+
     from_addr = {
         'name': 'Google',
         'address1': '1600 Amphitheatre Parkway',
