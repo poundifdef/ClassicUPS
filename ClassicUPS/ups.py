@@ -125,7 +125,7 @@ class TrackingInfo(object):
 class Shipment(object):
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_number=None):
+                 file_format='EPL', reference_numbers=None):
 
         self.file_format = file_format
 
@@ -209,6 +209,17 @@ class Shipment(object):
                 },
             },
         }
+
+        if reference_numbers:
+            reference_dict = []
+            for ref_code, ref_number in enumerate(reference_numbers):
+                reference_dict.append({
+                    'Code': ref_code,
+                    'Value': ref_number
+                })
+            reference_dict[0]['BarCodeIndicator'] = '1'
+
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
 
         if from_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
