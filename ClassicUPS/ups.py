@@ -237,7 +237,7 @@ class Shipment(object):
 
         self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
 
-        if 'ShipmentDigest' not in self.confirm_result.dict_response:
+        if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
             raise Exception(error_string)
 
