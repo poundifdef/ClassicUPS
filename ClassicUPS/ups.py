@@ -123,12 +123,17 @@ class TrackingInfo(object):
             return datetime.strptime(delivered[0]['Date'], '%Y%m%d')
 
 class Shipment(object):
+    SHIPPING_SERVICES = {
+        '1dayair': '01',
+        '2dayair': '02',
+        'ground': '03',
+        'worldwide_expedited': '08',
+    }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_numbers=None):
+                 file_format='EPL', reference_numbers=None, shipping_service='ground'):
 
         self.file_format = file_format
-
         shipping_request = {
             'ShipmentConfirmRequest': {
                 'Request': {
@@ -166,8 +171,8 @@ class Shipment(object):
                         },
                     },
                     'Service' : {  # TODO: add new service types
-                        'Code': '03',
-                        'Description': 'Ground',
+                        'Code': self.SHIPPING_SERVICES[shipping_service],
+                        'Description': shipping_service,
                     },
                     'PaymentInformation': {  # TODO: Other payment information
                         'Prepaid': {
@@ -231,6 +236,10 @@ class Shipment(object):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['AddressLine2'] = to_addr['address2']
 
         self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
+
+        if 'ShipmentDigest' not in self.confirm_result.dict_response:
+            error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
+            raise Exception(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
