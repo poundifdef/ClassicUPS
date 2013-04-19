@@ -167,7 +167,7 @@ class Shipment(object):
                             'StateProvinceCode': to_addr['state'],
                             'CountryCode': to_addr['country'],
                             'PostalCode': to_addr['postal_code'],
-                            'ResidentialAddress': '',  # TODO: omit this if not residential
+                            # 'ResidentialAddress': '',  # TODO: omit this if not residential
                         },
                     },
                     'Service' : {  # TODO: add new service types
