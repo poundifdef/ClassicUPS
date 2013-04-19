@@ -222,7 +222,7 @@ class Shipment(object):
                     'Code': ref_code,
                     'Value': ref_number
                 })
-            reference_dict[0]['BarCodeIndicator'] = '1'
+            #reference_dict[0]['BarCodeIndicator'] = '1'
 
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
 
