@@ -147,6 +147,7 @@ class Shipment(object):
                 'Shipment': {
                     'Shipper': {
                         'Name': from_addr['name'],
+                        'AttentionName': from_addr.get('attn') if from_addr.get('attn') else from_addr['name'],
                         'PhoneNumber': from_addr['phone'],
                         'ShipperNumber': ups_conn.shipper_number,
                         'Address': {
@@ -159,7 +160,7 @@ class Shipment(object):
                     },
                     'ShipTo' : {
                         'CompanyName': to_addr['name'],
-                        'AttentionName': to_addr['name'],
+                        'AttentionName': to_addr.get('attn') if to_addr.get('attn') else to_addr['name'],
                         'PhoneNumber': to_addr['phone'],
                         'Address': {
                             'AddressLine1': to_addr['address1'],
