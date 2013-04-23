@@ -131,7 +131,8 @@ class Shipment(object):
     }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_numbers=None, shipping_service='ground'):
+                 file_format='EPL', reference_numbers=None, shipping_service='ground',
+                 description=''):
 
         self.file_format = file_format
         shipping_request = {
@@ -225,7 +226,11 @@ class Shipment(object):
                 })
             #reference_dict[0]['BarCodeIndicator'] = '1'
 
-            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
+            if from_addr['country'] == 'US' and to_addr['country'] == 'US':
+                shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
+            else:
+                shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description
+                shipping_request['ShipmentConfirmRequest']['Shipment']['ReferenceNumber'] = reference_dict
 
         if from_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
