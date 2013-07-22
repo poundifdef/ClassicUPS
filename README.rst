@@ -31,7 +31,7 @@ Create a UPSConnection object, which gives you access to common UPS methods:
 
 .. code-block:: python
 
-    from ClassicUPS.ups import UPSConnection
+    from ClassicUPS import UPSConnection
 
     # Credentials obtained from the UPS website
     ups = UPSConnection(license_number,

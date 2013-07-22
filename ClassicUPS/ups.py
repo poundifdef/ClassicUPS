@@ -108,6 +108,13 @@ class TrackingInfo(object):
 
     @property
     def shipment_activities(self):
+        # Possible Status.StatusType.Code values:
+        #   I: In Transit
+        #   D: Delivered
+        #   X: Exception
+        #   P: Pickup
+        #   M: Manifest
+
         shipment_activities = (self.result.dict_response['TrackResponse']
                                       ['Shipment']['Package']['Activity'])
         if type(shipment_activities) != list:
@@ -121,6 +128,13 @@ class TrackingInfo(object):
                      if x['Status']['StatusType']['Code'] == 'D']
         if delivered:
             return datetime.strptime(delivered[0]['Date'], '%Y%m%d')
+
+    @property
+    def in_transit(self):
+        in_transit = [x for x in self.shipment_activities
+                     if x['Status']['StatusType']['Code'] == 'I']
+
+        return len(in_transit) > 0
 
 class Shipment(object):
     SHIPPING_SERVICES = {
