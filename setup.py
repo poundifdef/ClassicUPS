@@ -13,7 +13,7 @@ setup(
     install_requires=[
         'dict2xml == 1.0',
         'xmltodict == 0.4.2',
-        'requests == 0.14.2'
+        'requests >= 0.14.2'
     ],
     classifiers=[
         'Programming Language :: Python',
