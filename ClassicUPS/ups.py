@@ -42,7 +42,7 @@ class UPSConnection(object):
             }
         }
 
-        xml = '''
+        xml = u'''
         <?xml version="1.0"?>
         {access_request_xml}
 
@@ -62,7 +62,7 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = requests.post(url, data=xml)
+        resp = requests.post(url, data=xml.encode('latin-1'))
 
         return UPSResult(resp)
 
