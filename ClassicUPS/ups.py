@@ -138,10 +138,23 @@ class TrackingInfo(object):
 
 class Shipment(object):
     SHIPPING_SERVICES = {
-        '1dayair': '01',
-        '2dayair': '02',
-        'ground': '03',
-        'worldwide_expedited': '08',
+        '1dayair': '01',  # Next Day Air
+        '2dayair': '02',  # 2nd Day Air
+        'ground': '03',  # Ground
+        'express': '07',  # Express
+        'worldwide_expedited': '08',  # Expedited
+        'standard': '11',  # UPS Standard
+        '3_day_select': '12',  # 3 Day Select
+        'next_day_air_saver': '13',  # Next Day Air Saver
+        'next_day_air_early_am': '14',  # Next Day Air Early AM
+        'express_plus': '54',  # Express Plus
+        '2nd_day_air_am': '59',  # 2nd Day Air A.M.
+        'ups_saver': '65',  # UPS Saver.
+        'ups_today_standard': '82',  # UPS Today Standard
+        'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
+        'ups_today_intercity': '84',  # UPS Today Intercity
+        'ups_today_express': '85',  # UPS Today Express
+        'ups_today_express_saver': '86',  # UPS Today Express Saver.
     }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
