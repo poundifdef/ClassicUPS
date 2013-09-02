@@ -305,7 +305,9 @@ class Shipment(object):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
 
-    def save_label(self, fd):
+    def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-        binary = a2b_base64(raw_epl)
-        fd.write(binary)
+        return a2b_base64(raw_epl)
+
+    def save_label(self, fd):
+        fd.write(self.get_label())
