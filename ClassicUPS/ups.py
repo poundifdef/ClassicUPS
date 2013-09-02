@@ -159,7 +159,7 @@ class Shipment(object):
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
-                 description=''):
+                 description='', dimensions_unit='IN', weight_unit='LBS'):
 
         self.file_format = file_format
         shipping_request = {
@@ -216,14 +216,19 @@ class Shipment(object):
                         },
                         'Dimensions': {
                             'UnitOfMeasurement': {
-                                'Code': 'IN',
+                                'Code': dimensions_unit,
+                                # default unit: inches (IN)
                             },
                             'Length': dimensions['length'],
                             'Width': dimensions['width'],
                             'Height': dimensions['height'],
                         },
                         'PackageWeight': {
-                            'Weight': weight,  # Units are pounds (lbs)
+                            'UnitOfMeasurement': {
+                                'Code': weight_unit,
+                                # default unit: pounds (LBS)
+                            },
+                            'Weight': weight,
                         },
                         'PackageServiceOptions': '',  # TODO: insured value, verbal confirmation, etc
                     },
