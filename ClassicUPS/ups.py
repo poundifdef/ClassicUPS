@@ -42,7 +42,7 @@ class UPSConnection(object):
             }
         }
 
-        xml = '''
+        xml = u'''
         <?xml version="1.0"?>
         {access_request_xml}
 
@@ -62,7 +62,7 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = requests.post(url, data=xml)
+        resp = requests.post(url, data=xml.encode('latin-1'))
 
         return UPSResult(resp)
 
@@ -138,15 +138,29 @@ class TrackingInfo(object):
 
 class Shipment(object):
     SHIPPING_SERVICES = {
-        '1dayair': '01',
-        '2dayair': '02',
-        'ground': '03',
-        'worldwide_expedited': '08',
+        '1dayair': '01',  # Next Day Air
+        '2dayair': '02',  # 2nd Day Air
+        'ground': '03',  # Ground
+        'express': '07',  # Express
+        'worldwide_expedited': '08',  # Expedited
+        'standard': '11',  # UPS Standard
+        '3_day_select': '12',  # 3 Day Select
+        'next_day_air_saver': '13',  # Next Day Air Saver
+        'next_day_air_early_am': '14',  # Next Day Air Early AM
+        'express_plus': '54',  # Express Plus
+        '2nd_day_air_am': '59',  # 2nd Day Air A.M.
+        'ups_saver': '65',  # UPS Saver.
+        'ups_today_standard': '82',  # UPS Today Standard
+        'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
+        'ups_today_intercity': '84',  # UPS Today Intercity
+        'ups_today_express': '85',  # UPS Today Express
+        'ups_today_express_saver': '86',  # UPS Today Express Saver.
     }
+
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
-                 description=''):
+                 description='', dimensions_unit='IN', weight_unit='LBS'):
 
         self.file_format = file_format
         shipping_request = {
@@ -199,18 +213,23 @@ class Shipment(object):
                     },
                     'Package': {
                         'PackagingType': {
-                            'Code': '02',
+                            'Code': '02',  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
                         },
                         'Dimensions': {
                             'UnitOfMeasurement': {
-                                'Code': 'IN',
+                                'Code': dimensions_unit,
+                                # default unit: inches (IN)
                             },
                             'Length': dimensions['length'],
                             'Width': dimensions['width'],
                             'Height': dimensions['height'],
                         },
                         'PackageWeight': {
-                            'Weight': weight,  # Units are pounds (lbs)
+                            'UnitOfMeasurement': {
+                                'Code': weight_unit,
+                                # default unit: pounds (LBS)
+                            },
+                            'Weight': weight,
                         },
                         'PackageServiceOptions': '',  # TODO: insured value, verbal confirmation, etc
                     },
@@ -287,7 +306,9 @@ class Shipment(object):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
 
-    def save_label(self, fd):
+    def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-        binary = a2b_base64(raw_epl)
-        fd.write(binary)
+        return a2b_base64(raw_epl)
+
+    def save_label(self, fd):
+        fd.write(self.get_label())
