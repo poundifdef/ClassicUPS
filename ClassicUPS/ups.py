@@ -254,7 +254,7 @@ class Shipment(object):
             reference_dict = []
             for ref_code, ref_number in enumerate(reference_numbers):
                 # allow custom reference codes to be set by passing tuples.
-                # according to the docs ("Shipping Package – WebServices
+                # according to the docs ("Shipping Package -- WebServices
                 # 8/24/2013") ReferenceNumber/Code should hint on the type of
                 # the reference number. a list of codes can be found in
                 # appendix I (page 503) in the same document.
