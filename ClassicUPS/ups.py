@@ -62,7 +62,7 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = requests.post(url, data=xml.encode('latin-1'))
+        resp = requests.post(url, data=xml.encode('ascii', 'xmlcharrefreplace'))
 
         return UPSResult(resp)
 
