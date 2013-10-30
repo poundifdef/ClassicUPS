@@ -10,11 +10,7 @@ setup(
     description='Usable UPS Integration in Python',
     long_description=open('README.rst').read(),
     keywords=['UPS'],
-    install_requires=[
-        'dict2xml == 1.0',
-        'xmltodict == 0.4.2',
-        'requests == 0.14.2'
-    ],
+    install_requires=["lxml"],
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: Apache Software License',
