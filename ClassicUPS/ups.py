@@ -185,10 +185,17 @@ class Shipment(object):
         'ups_today_express_saver': '86',  # UPS Today Express Saver.
     }
 
+    DCIS_TYPES = {
+        'no_signature': 1,
+        'signature_required': 2,
+        'adult_signature_required': 3,
+        'usps_delivery_confiratmion': 4,
+    }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
-                 description='', dimensions_unit='IN', weight_unit='LBS'):
+                 description='', dimensions_unit='IN', weight_unit='LBS',
+                 delivery_confirmation="no_signature"):
 
         self.file_format = file_format
         shipping_request = {
@@ -259,7 +266,12 @@ class Shipment(object):
                             },
                             'Weight': weight,
                         },
-                        'PackageServiceOptions': '',  # TODO: insured value, verbal confirmation, etc
+                        'PackageServiceOptions': {
+                            # TODO: insured value, etc
+                            'DeliveryConfirmation': {
+                                'DCISType': self.DCIS_TYPES[delivery_confirmation],
+                            }
+                        },
                     },
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
