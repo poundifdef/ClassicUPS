@@ -1,14 +1,41 @@
-import requests
-from dict2xml import dict2xml
-import xmltodict
 import json
-import os
-import tempfile
-import shutil
+from lxml import etree
 import urllib
 
 from binascii import a2b_base64
 from datetime import datetime
+
+
+def xmltodict(xml_string):
+    element = etree.fromstring(xml_string)
+    tag, data = _recursive_dict(element)
+    return {tag: data}
+
+
+def dict2xml(data):
+    root_key, root_value = data.iteritems().next()
+    root_element = etree.Element(root_key)
+    return etree.tostring(_build_xml(root_element, root_value))
+
+
+def _build_xml(r, d):
+    if isinstance(d, dict):
+        for k, v in d.iteritems():
+            s = etree.SubElement(r, k)
+            _build_xml(s, v)
+    elif isinstance(d, tuple) or isinstance(d, list):
+        for v in d:
+            s = etree.SubElement(r, 'i')
+            _build_xml(s, v)
+    elif isinstance(d, basestring):
+        r.text = d
+    else:
+        r.text = unicode(d)
+    return r
+
+
+def _recursive_dict(element):
+    return element.tag, dict(map(_recursive_dict, element)) or element.text
 
 
 class UPSConnection(object):
@@ -42,7 +69,7 @@ class UPSConnection(object):
             }
         }
 
-        xml = '''
+        xml = u'''
         <?xml version="1.0"?>
         {access_request_xml}
 
@@ -62,7 +89,8 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = requests.post(url, data=xml)
+        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
+                .read()
 
         return UPSResult(resp)
 
@@ -79,11 +107,11 @@ class UPSResult(object):
 
     @property
     def xml_response(self):
-        return self.response.text
+        return self.response
 
     @property
     def dict_response(self):
-        return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
+        return json.loads(json.dumps(xmltodict(self.xml_response)))
 
 class TrackingInfo(object):
 
@@ -138,15 +166,36 @@ class TrackingInfo(object):
 
 class Shipment(object):
     SHIPPING_SERVICES = {
-        '1dayair': '01',
-        '2dayair': '02',
-        'ground': '03',
-        'worldwide_expedited': '08',
+        '1dayair': '01',  # Next Day Air
+        '2dayair': '02',  # 2nd Day Air
+        'ground': '03',  # Ground
+        'express': '07',  # Express
+        'worldwide_expedited': '08',  # Expedited
+        'standard': '11',  # UPS Standard
+        '3_day_select': '12',  # 3 Day Select
+        'next_day_air_saver': '13',  # Next Day Air Saver
+        'next_day_air_early_am': '14',  # Next Day Air Early AM
+        'express_plus': '54',  # Express Plus
+        '2nd_day_air_am': '59',  # 2nd Day Air A.M.
+        'ups_saver': '65',  # UPS Saver.
+        'ups_today_standard': '82',  # UPS Today Standard
+        'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
+        'ups_today_intercity': '84',  # UPS Today Intercity
+        'ups_today_express': '85',  # UPS Today Express
+        'ups_today_express_saver': '86',  # UPS Today Express Saver.
+    }
+
+    DCIS_TYPES = {
+        'no_signature': 1,
+        'signature_required': 2,
+        'adult_signature_required': 3,
+        'usps_delivery_confiratmion': 4,
     }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
-                 description=''):
+                 description='', dimensions_unit='IN', weight_unit='LBS',
+                 delivery_confirmation="no_signature"):
 
         self.file_format = file_format
         shipping_request = {
@@ -199,20 +248,30 @@ class Shipment(object):
                     },
                     'Package': {
                         'PackagingType': {
-                            'Code': '02',
+                            'Code': '02',  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
                         },
                         'Dimensions': {
                             'UnitOfMeasurement': {
-                                'Code': 'IN',
+                                'Code': dimensions_unit,
+                                # default unit: inches (IN)
                             },
                             'Length': dimensions['length'],
                             'Width': dimensions['width'],
                             'Height': dimensions['height'],
                         },
                         'PackageWeight': {
-                            'Weight': weight,  # Units are pounds (lbs)
+                            'UnitOfMeasurement': {
+                                'Code': weight_unit,
+                                # default unit: pounds (LBS)
+                            },
+                            'Weight': weight,
                         },
-                        'PackageServiceOptions': '',  # TODO: insured value, verbal confirmation, etc
+                        'PackageServiceOptions': {
+                            # TODO: insured value, etc
+                            'DeliveryConfirmation': {
+                                'DCISType': self.DCIS_TYPES[delivery_confirmation],
+                            }
+                        },
                     },
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
@@ -234,6 +293,16 @@ class Shipment(object):
         if reference_numbers:
             reference_dict = []
             for ref_code, ref_number in enumerate(reference_numbers):
+                # allow custom reference codes to be set by passing tuples.
+                # according to the docs ("Shipping Package -- WebServices
+                # 8/24/2013") ReferenceNumber/Code should hint on the type of
+                # the reference number. a list of codes can be found in
+                # appendix I (page 503) in the same document.
+                try:
+                    ref_code, ref_number = ref_number
+                except:
+                    pass
+
                 reference_dict.append({
                     'Code': ref_code,
                     'Value': ref_number
@@ -287,7 +356,9 @@ class Shipment(object):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
 
-    def save_label(self, fd):
+    def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-        binary = a2b_base64(raw_epl)
-        fd.write(binary)
+        return a2b_base64(raw_epl)
+
+    def save_label(self, fd):
+        fd.write(self.get_label())
