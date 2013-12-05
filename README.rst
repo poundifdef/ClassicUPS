@@ -44,7 +44,9 @@ Check the delivery date of a package.
 
 .. code-block:: python
 
-    print ups.tracking_info('1Z12345E0291980793').delivered
+    tracking = ups.tracking_info('1Z12345E0291980793')
+    print tracking.in_transit
+    print tracking.delivered
 
 Create shipment and save shipping label as GIF file:
 
