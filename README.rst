@@ -24,6 +24,9 @@ Installation is easy:
 
     $ pip install ClassicUPS
 
+ClassicUPS depends on libxml2 and libxslt. On Ubuntu, the packages are
+``libxml2-dev`` and ``libxslt-dev``.
+
 Quickstart
 ----------
 
