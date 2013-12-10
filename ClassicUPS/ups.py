@@ -1,41 +1,10 @@
 import json
-from lxml import etree
 import urllib
+import xmltodict
 
 from binascii import a2b_base64
 from datetime import datetime
-
-
-def xmltodict(xml_string):
-    element = etree.fromstring(xml_string)
-    tag, data = _recursive_dict(element)
-    return {tag: data}
-
-
-def dict2xml(data):
-    root_key, root_value = data.iteritems().next()
-    root_element = etree.Element(root_key)
-    return etree.tostring(_build_xml(root_element, root_value))
-
-
-def _build_xml(r, d):
-    if isinstance(d, dict):
-        for k, v in d.iteritems():
-            s = etree.SubElement(r, k)
-            _build_xml(s, v)
-    elif isinstance(d, tuple) or isinstance(d, list):
-        for v in d:
-            s = etree.SubElement(r, 'i')
-            _build_xml(s, v)
-    elif isinstance(d, basestring):
-        r.text = d
-    else:
-        r.text = unicode(d)
-    return r
-
-
-def _recursive_dict(element):
-    return element.tag, dict(map(_recursive_dict, element)) or element.text
+from dict2xml import dict2xml
 
 
 class UPSConnection(object):
@@ -111,7 +80,7 @@ class UPSResult(object):
 
     @property
     def dict_response(self):
-        return json.loads(json.dumps(xmltodict(self.xml_response)))
+        return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
 
 class TrackingInfo(object):
 
