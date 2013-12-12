@@ -81,7 +81,8 @@ Create shipment and save shipping label as GIF file:
     weight = 10  # in lbs
 
     # Create the shipment. Use file_format='EPL' for a thermal-printer-compatible EPL
-    shipment = ups.create_shipment(from_addr, to_addr, dimensions, weight, file_format='GIF')
+    shipment = ups.create_shipment(from_addr, to_addr, dimensions, weight,
+                                   file_format='GIF')
 
     # Print information about our shipment
     print shipment.cost
