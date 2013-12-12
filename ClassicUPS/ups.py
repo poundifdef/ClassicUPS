@@ -164,7 +164,7 @@ class Shipment(object):
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
                  description='', dimensions_unit='IN', weight_unit='LBS',
-                 delivery_confirmation="no_signature"):
+                 delivery_confirmation=None):
 
         self.file_format = file_format
         shipping_request = {
@@ -235,12 +235,7 @@ class Shipment(object):
                             },
                             'Weight': weight,
                         },
-                        'PackageServiceOptions': {
-                            # TODO: insured value, etc
-                            'DeliveryConfirmation': {
-                                'DCISType': self.DCIS_TYPES[delivery_confirmation],
-                            }
-                        },
+                        'PackageServiceOptions': {},
                     },
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
@@ -258,6 +253,11 @@ class Shipment(object):
                 },
             },
         }
+
+        if delivery_confirmation:
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
+                'DCISType': self.DCIS_TYPES[delivery_confirmation]
+            }
 
         if reference_numbers:
             reference_dict = []
