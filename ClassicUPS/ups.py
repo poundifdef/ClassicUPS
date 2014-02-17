@@ -69,6 +69,7 @@ class UPSConnection(object):
     def create_shipment(self, *args, **kwargs):
         return Shipment(self, *args, **kwargs)
 
+
 class UPSResult(object):
 
     def __init__(self, response):
@@ -81,6 +82,7 @@ class UPSResult(object):
     @property
     def dict_response(self):
         return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
+
 
 class TrackingInfo(object):
 
@@ -103,6 +105,24 @@ class TrackingInfo(object):
 
         self.result = ups_conn._transmit_request('track', tracking_request)
 
+        # if error:
+        #{
+        #    u'Response': {
+        #        u'ResponseStatusCode': u'0',
+        #        u'TransactionReference': {
+        #            u'CustomerContext': u'Get tracking status',
+        #            u'XpciVersion': u'1.0'
+        #        },
+        #        u'ResponseStatusDescription': u'Failure',
+        #        u'Error': {
+        #            u'ErrorCode': u'151018',
+        #            u'ErrorDescription':
+        #            u'Invalid tracking number',
+        #            u'ErrorSeverity': u'Hard'
+        #        }
+        #    }
+        #}
+
     @property
     def shipment_activities(self):
         # Possible Status.StatusType.Code values:
@@ -112,26 +132,41 @@ class TrackingInfo(object):
         #   P: Pickup
         #   M: Manifest
 
-        shipment_activities = (self.result.dict_response['TrackResponse']
-                                      ['Shipment']['Package']['Activity'])
-        if type(shipment_activities) != list:
-            shipment_activities = [shipment_activities]
-
-        return shipment_activities
+        try:
+            shipment_activities = (self.result.dict_response['TrackResponse']
+                                          ['Shipment']['Package']['Activity'])
+            if type(shipment_activities) != list:
+                shipment_activities = [shipment_activities]
+            return shipment_activities
+        except KeyError:
+            return []
 
     @property
     def delivered(self):
-        delivered = [x for x in self.shipment_activities
-                     if x['Status']['StatusType']['Code'] == 'D']
-        if delivered:
-            return datetime.strptime(delivered[0]['Date'], '%Y%m%d')
+        try:
+            delivered = [x for x in self.shipment_activities
+                         if x['Status']['StatusType']['Code'] == 'D']
+            if delivered:
+                return datetime.strptime(delivered[0]['Date'], '%Y%m%d')
+        except KeyError:
+            return {
+                'error_code': self.result.dict_response['TrackResponse']['Response']['Error']['ErrorCode'],
+                'error_message': self.result.dict_response['TrackResponse']['Response']['Error']['ErrorDescription']
+            }
 
     @property
     def in_transit(self):
-        in_transit = [x for x in self.shipment_activities
-                     if x['Status']['StatusType']['Code'] == 'I']
+        try:
+            in_transit = [x for x in self.shipment_activities
+                         if x['Status']['StatusType']['Code'] == 'I']
 
-        return len(in_transit) > 0
+            return len(in_transit) > 0
+        except KeyError:
+            return {
+                'error_code': self.result.dict_response['TrackResponse']['Response']['Error']['ErrorCode'],
+                'error_message': self.result.dict_response['TrackResponse']['Response']['Error']['ErrorDescription']
+            }
+
 
 class Shipment(object):
     SHIPPING_SERVICES = {
@@ -204,7 +239,7 @@ class Shipment(object):
                             # 'ResidentialAddress': '',  # TODO: omit this if not residential
                         },
                     },
-                    'Service' : {  # TODO: add new service types
+                    'Service': {  # TODO: add new service types
                         'Code': self.SHIPPING_SERVICES[shipping_service],
                         'Description': shipping_service,
                     },
@@ -281,8 +316,10 @@ class Shipment(object):
             if from_addr['country'] == 'US' and to_addr['country'] == 'US':
                 shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
             else:
-                shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description
                 shipping_request['ShipmentConfirmRequest']['Shipment']['ReferenceNumber'] = reference_dict
+
+        if description:
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description
 
         if from_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
@@ -319,6 +356,10 @@ class Shipment(object):
     def cost(self):
         total_cost = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentCharges']['TotalCharges']['MonetaryValue']
         return float(total_cost)
+
+    @property
+    def currency(self):
+        return self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentCharges']['TotalCharges']['CurrencyCode']
 
     @property
     def tracking_number(self):
