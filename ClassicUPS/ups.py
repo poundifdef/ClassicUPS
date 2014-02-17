@@ -6,15 +6,19 @@ from binascii import a2b_base64
 from datetime import datetime
 from dict2xml import dict2xml
 
+EMPTY_VALUES = (None, '', [], (), {})
+
 
 class UPSConnection(object):
 
     test_urls = {
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate',
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
     }
     production_urls = {
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate',
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
@@ -69,6 +73,9 @@ class UPSConnection(object):
     def create_shipment(self, *args, **kwargs):
         return Shipment(self, *args, **kwargs)
 
+    def get_rates(self, *args, **kwargs):
+        return Rate(self, *args, **kwargs)
+
 
 class UPSResult(object):
 
@@ -82,6 +89,110 @@ class UPSResult(object):
     @property
     def dict_response(self):
         return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
+
+
+class Rate(object):
+    SHIPPING_SERVICES = {
+        '01': 'Next Day Air',
+        '02': 'Second Day Air',
+        '03': 'Ground',
+        '07': 'Worlwide Express',
+        '08': 'Worlwide Expedited',
+        '11': 'Standard',
+        '12': 'Three-Day Select',
+        '13': 'Next Day Air Saver',
+        '14': 'Next Day Air Early A.M.',
+        '54': 'Worlwide Express Plus',
+        '59': 'Second Day Air A.M.',
+        '65': 'Saver',
+        '82': 'Today Standard',
+        '83': 'Today Dedicated Courrier',
+        '84': 'Today Intercity',
+        '85': 'Today Express',
+        '86': 'Today Express Saver',
+        'TDCB': 'Trade Direct Cross Border',
+        'TDA': 'Trade Direct Air',
+        'TDO': 'Trade Direct Ocean',
+        '308': 'Freight LTL',
+        '309': 'Freight LTL Guaranteed',
+        '310': 'Freight LTL Urgent',
+    }
+
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, description='',
+                 dimensions_unit='IN', weight_unit='LBS'):
+        rate_request = {
+            'RatingServiceSelectionRequest': {
+                'Request': {
+                    'RequestAction': 'Rate',
+                    'RequestOption': 'Shop',  # Rate returns the cost for a specific UPS service,
+                    # Shop returns the costs for all available UPS services for the shipment
+                },
+                'Shipment': {
+                    'Shipper': {
+                        'ShipperNumber': ups_conn.shipper_number,
+                        'Address': {
+                            'CountryCode': from_addr['country'],
+                            'PostalCode': from_addr['postal_code'],
+                        },
+                    },
+                    'ShipTo': {
+                        'Address': {
+                            'CountryCode': to_addr['country'],
+                            'PostalCode': to_addr['postal_code'],
+                        },
+                    },
+                    'Package': {
+                        'PackagingType': {
+                            'Code': '02',  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
+                        },
+                        'Dimensions': {
+                            'UnitOfMeasurement': {
+                                'Code': dimensions_unit,
+                                # default unit: inches (IN)
+                            },
+                            'Length': dimensions['length'],
+                            'Width': dimensions['width'],
+                            'Height': dimensions['height'],
+                        },
+                        'PackageWeight': {
+                            'UnitOfMeasurement': {
+                                'Code': weight_unit,
+                                # default unit: pounds (LBS)
+                            },
+                            'Weight': weight,
+                        },
+                        'PackageServiceOptions': {},
+                    },
+                    'ShipmentServiceOptions': {
+                        'SaturdayPickupIndicator': True
+                    }
+                }
+            },
+        }
+
+        if description not in EMPTY_VALUES:
+            rate_request['RatingServiceSelectionRequest']['Shipment']['Description'] = description
+
+        self.rate_result = ups_conn._transmit_request('rate', rate_request)
+
+    @property
+    def costs(self):
+        result = []
+        try:
+            for rated_shipment in self.rate_result.dict_response['RatingServiceSelectionResponse']['RatedShipment']:
+                service_code = rated_shipment['Service']['Code']
+                result.append({
+                    'service_code': service_code,
+                    'service_title': self.SHIPPING_SERVICES.get(service_code, service_code),
+                    'cost_transportation': rated_shipment['TransportationCharges']['MonetaryValue'],
+                    'cost_other': rated_shipment['ServiceOptionsCharges']['MonetaryValue'],
+                    'cost_total': rated_shipment['TotalCharges']['MonetaryValue'],
+                    'currency': rated_shipment['TotalCharges']['CurrencyCode'],
+                })
+        except KeyError:
+            return []
+
+        return result
 
 
 class TrackingInfo(object):
@@ -197,9 +308,12 @@ class Shipment(object):
     }
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_numbers=None, shipping_service='ground',
+                 file_format='EPL', reference_numbers=None, shipping_service='ground', shipping_service_code=None,
                  description='', dimensions_unit='IN', weight_unit='LBS',
                  delivery_confirmation=None):
+
+        if not shipping_service_code and shipping_service:
+            shipping_service_code = self.SHIPPING_SERVICES[shipping_service]
 
         self.file_format = file_format
         shipping_request = {
@@ -240,7 +354,7 @@ class Shipment(object):
                         },
                     },
                     'Service': {  # TODO: add new service types
-                        'Code': self.SHIPPING_SERVICES[shipping_service],
+                        'Code': shipping_service_code,
                         'Description': shipping_service,
                     },
                     'PaymentInformation': {  # TODO: Other payment information
@@ -318,16 +432,16 @@ class Shipment(object):
             else:
                 shipping_request['ShipmentConfirmRequest']['Shipment']['ReferenceNumber'] = reference_dict
 
-        if description:
+        if description not in EMPTY_VALUES:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description
 
-        if from_addr.get('address2'):
+        if from_addr.get('address2') not in EMPTY_VALUES:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
 
-        if to_addr.get('company'):
+        if to_addr.get('company') not in EMPTY_VALUES:
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['CompanyName'] = to_addr['company']
 
-        if to_addr.get('address2'):
+        if to_addr.get('address2') not in EMPTY_VALUES:
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['AddressLine2'] = to_addr['address2']
 
         self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
