@@ -1,3 +1,4 @@
+import base64
 import json
 import urllib
 import xmltodict
@@ -482,7 +483,9 @@ class Shipment(object):
 
     def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-        return a2b_base64(raw_epl)
+        return base64.b64encode(raw_epl)
 
     def save_label(self, fd):
-        fd.write(self.get_label())
+        encoded_label = base64.b64decode(self.get_label())
+        image_data = a2b_base64(encoded_label)
+        fd.write(image_data)
