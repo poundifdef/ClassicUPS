@@ -6,6 +6,29 @@ from binascii import a2b_base64
 from datetime import datetime
 from dict2xml import dict2xml
 
+SHIPPING_SERVICES = {
+    '1dayair': '01',  # Next Day Air
+    '2dayair': '02',  # 2nd Day Air
+    'ground': '03',  # Ground
+    'express': '07',  # Express
+    'worldwide_expedited': '08',  # Expedited
+    'standard': '11',  # UPS Standard
+    '3_day_select': '12',  # 3 Day Select
+    'next_day_air_saver': '13',  # Next Day Air Saver
+    'next_day_air_early_am': '14',  # Next Day Air Early AM
+    'express_plus': '54',  # Express Plus
+    '2nd_day_air_am': '59',  # 2nd Day Air A.M.
+    'ups_saver': '65',  # UPS Saver.
+    'ups_today_standard': '82',  # UPS Today Standard
+    'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
+    'ups_today_intercity': '84',  # UPS Today Intercity
+    'ups_today_express': '85',  # UPS Today Express
+    'ups_today_express_saver': '86',  # UPS Today Express Saver.
+}
+
+class UPSError(Exception):
+    def __init__(self, message):
+        self.message = message
 
 class UPSConnection(object):
 
@@ -68,6 +91,9 @@ class UPSConnection(object):
 
     def create_shipment(self, *args, **kwargs):
         return Shipment(self, *args, **kwargs)
+
+    def create_rates(self, *args, **kwargs):
+        return Rates(self, *args, **kwargs)
 
 class UPSResult(object):
 
@@ -133,26 +159,74 @@ class TrackingInfo(object):
 
         return len(in_transit) > 0
 
+class Rates(object):
+
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service):
+
+        rates_request = {"RatingServiceSelectionRequest": {
+            "Request": {
+                'TransactionReference': {
+                    'CustomerContext': 'rate request',
+                    'XpciVersion': '1.0001',
+                },
+                'RequestAction': 'Rate',
+                'RequestOption': 'Rate', 
+            },
+            "PickupType": {
+                "Code": "01"
+            },
+            "Shipment": {
+                "Shipper": {
+                    "Address": {
+                        "PostalCode": from_addr["postal_code"],
+                        "StateProvinceCode": from_addr["state"],
+                        "CountryCode": from_addr["country"]
+                    }
+                },
+                "ShipTo": {
+                    "Address": {
+                        "PostalCode": to_addr["postal_code"],
+                        "StateProvinceCode": to_addr["state"],
+                        "CountryCode": to_addr["country"],
+                    }
+                },
+                "ShipFrom": {
+                    "Address": {
+                        "PostalCode": from_addr["postal_code"],
+                        "City": from_addr["city"],
+                        "StateProvinceCode": from_addr["state"],
+                        "CountryCode": from_addr["country"]
+                    }
+                },
+                "Service": {
+                    "Code": SHIPPING_SERVICES[shipping_service]
+                },
+                "Package": {
+                    "PackagingType": {
+                        "Code": "02"
+                    },
+                    "Dimensions": {
+                        "UnitOfMeasurement": {
+                            "Code": "IN"
+                        }
+                        "Length": dimensions["length"],
+                        "Width": dimensions["width"],
+                        "Height": dimensions["height"]
+                    }
+                    "PackageWeight": {
+                        "UnitOfMeasurement": {
+                            "Code": "LBS"
+                        },
+                        "Weight": weight
+                    }
+                }
+            }
+        }}
+
+        self.rate_result = ups_conn._transmit_request('ship_confirm', shipping_request)
+
+
 class Shipment(object):
-    SHIPPING_SERVICES = {
-        '1dayair': '01',  # Next Day Air
-        '2dayair': '02',  # 2nd Day Air
-        'ground': '03',  # Ground
-        'express': '07',  # Express
-        'worldwide_expedited': '08',  # Expedited
-        'standard': '11',  # UPS Standard
-        '3_day_select': '12',  # 3 Day Select
-        'next_day_air_saver': '13',  # Next Day Air Saver
-        'next_day_air_early_am': '14',  # Next Day Air Early AM
-        'express_plus': '54',  # Express Plus
-        '2nd_day_air_am': '59',  # 2nd Day Air A.M.
-        'ups_saver': '65',  # UPS Saver.
-        'ups_today_standard': '82',  # UPS Today Standard
-        'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
-        'ups_today_intercity': '84',  # UPS Today Intercity
-        'ups_today_express': '85',  # UPS Today Express
-        'ups_today_express_saver': '86',  # UPS Today Express Saver.
-    }
 
     DCIS_TYPES = {
         'no_signature': 1,
@@ -205,7 +279,7 @@ class Shipment(object):
                         },
                     },
                     'Service' : {  # TODO: add new service types
-                        'Code': self.SHIPPING_SERVICES[shipping_service],
+                        'Code': SHIPPING_SERVICES[shipping_service],
                         'Description': shipping_service,
                     },
                     'PaymentInformation': {  # TODO: Other payment information
@@ -297,7 +371,7 @@ class Shipment(object):
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
-            raise Exception(error_string)
+            raise UPSError(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
