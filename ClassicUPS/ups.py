@@ -208,11 +208,11 @@ class Rates(object):
                     "Dimensions": {
                         "UnitOfMeasurement": {
                             "Code": "IN"
-                        }
+                        },
                         "Length": dimensions["length"],
                         "Width": dimensions["width"],
                         "Height": dimensions["height"]
-                    }
+                    },
                     "PackageWeight": {
                         "UnitOfMeasurement": {
                             "Code": "LBS"
