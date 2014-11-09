@@ -223,7 +223,7 @@ class Rates(object):
             }
         }}
 
-        self.rate_result = ups_conn._transmit_request('ship_confirm', shipping_request)
+        self.rate_result = ups_conn._transmit_request('rate', shipping_request)
 
 
 class Shipment(object):
