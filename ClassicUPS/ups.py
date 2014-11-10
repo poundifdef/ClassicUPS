@@ -36,11 +36,13 @@ class UPSConnection(object):
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate',
     }
     production_urls = {
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate',
     }
 
     def __init__(self, license_number, user_id, password, shipper_number=None,
@@ -223,7 +225,7 @@ class Rates(object):
             }
         }}
 
-        self.rate_result = ups_conn._transmit_request('rate', shipping_request)
+        self.rate_result = ups_conn._transmit_request('rate', rates_request)
 
 
 class Shipment(object):
