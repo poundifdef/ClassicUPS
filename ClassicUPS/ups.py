@@ -97,6 +97,9 @@ class UPSConnection(object):
     def create_rates(self, *args, **kwargs):
         return Rates(self, *args, **kwargs)
 
+    def check_shipping_valid(self, *args, **kwards):
+        return ShippingValid(self, *args, **kwargs)
+
 class UPSResult(object):
 
     def __init__(self, response):
@@ -109,6 +112,10 @@ class UPSResult(object):
     @property
     def dict_response(self):
         return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
+
+class ShippingValid(object):
+    def __init__(self, ups_conn, to_addr):
+        self.result = ""
 
 class TrackingInfo(object):
 
@@ -237,8 +244,8 @@ class Shipment(object):
         'usps_delivery_confiratmion': 4,
     }
 
-    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_numbers=None, shipping_service='ground',
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service, reference_numbers,
+                 file_format='EPL', 
                  description='', dimensions_unit='IN', weight_unit='LBS',
                  delivery_confirmation=None):
 
@@ -373,6 +380,7 @@ class Shipment(object):
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
+            print error_string
             raise UPSError(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
@@ -400,6 +408,7 @@ class Shipment(object):
     def tracking_number(self):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
+
 
     def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
