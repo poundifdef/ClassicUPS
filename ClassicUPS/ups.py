@@ -252,6 +252,13 @@ class Rates(object):
 
         self.rate_result = ups_conn._transmit_request('rate', rates_request)
 
+        if self.rate_result.dict_response['RatingServiceSelectionResponse'][
+                'Response']['ResponseStatusCode'] == '0':
+            error_string = self.rate_result.dict_response[
+                'RatingServiceSelectionResponse']['Response']['Error'][
+                'ErrorDescription']
+            raise UPSError(error_string)
+
     @property
     def total_charges(self):
         response = self.rate_result.dict_response
@@ -433,7 +440,6 @@ class Shipment(object):
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
-            print error_string
             raise UPSError(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
