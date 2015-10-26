@@ -269,7 +269,6 @@ class Shipment(object):
                         'Address': {
                             'AddressLine1': from_addr['address1'],
                             'City': from_addr['city'],
-                            'StateProvinceCode': from_addr['state'],
                             'CountryCode': from_addr['country'],
                             'PostalCode': from_addr['postal_code'],
                         },
@@ -281,7 +280,6 @@ class Shipment(object):
                         'Address': {
                             'AddressLine1': to_addr['address1'],
                             'City': to_addr['city'],
-                            'StateProvinceCode': to_addr['state'],
                             'CountryCode': to_addr['country'],
                             'PostalCode': to_addr['postal_code'],
                             # 'ResidentialAddress': '',  # TODO: omit this if not residential
@@ -370,11 +368,17 @@ class Shipment(object):
         if from_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
 
+        if from_addr.get('state'):
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['StateProvinceCode'] = from_addr['state']
+
         if to_addr.get('company'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['CompanyName'] = to_addr['company']
 
         if to_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['AddressLine2'] = to_addr['address2']
+
+        if to_addr.get('state'):
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['StateProvinceCode'] = to_addr['state']
 
         self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
 
