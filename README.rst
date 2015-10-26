@@ -73,20 +73,26 @@ Create shipment and save shipping label as GIF file:
         'postal_code': '20500',
         'phone': '2024561111'
     }
-    dimensions = {  # in inches
-        'length': 1,
-        'width': 4,
-        'height': 9
+    package1 = {
+        'packaging_type': '02', # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
+        'dimensions': {  # in inches
+            'length': 1,
+            'width': 4,
+            'height': 9
+        },
+        'weight': 10 # in lbs
     }
-    weight = 10  # in lbs
+    packages = [
+        package1
+    ]
 
     # Create the shipment. Use file_format='EPL' for a thermal-printer-compatible EPL
-    shipment = ups.create_shipment(from_addr, to_addr, dimensions, weight,
-                                   file_format='GIF')
+    shipment = ups.create_shipment(from_addr, to_addr, packages, 'standard', file_format='GIF')
 
     # Print information about our shipment
     print shipment.cost
     print shipment.tracking_number
 
     # Save the shipping label to print, email, etc
+    # Warning if is a multipackage request only saves first label
     shipment.save_label(open('label.gif', 'wb'))

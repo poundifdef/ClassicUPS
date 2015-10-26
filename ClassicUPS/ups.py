@@ -244,12 +244,40 @@ class Shipment(object):
         'usps_delivery_confiratmion': 4,
     }
 
-    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service, reference_numbers=None,
+    def __init__(self, ups_conn, from_addr, to_addr, packages, shipping_service, reference_numbers=None,
                  file_format='EPL',
                  description='', dimensions_unit='IN', weight_unit='LBS',
                  delivery_confirmation=None):
 
         self.file_format = file_format
+
+        packages_list = []
+        for package in packages:
+            dimensions = package['dimensions']
+            weight = package['weight']
+            packages_list.append({
+                'PackagingType': {
+                    'Code': package.get('packaging_type') or '02'
+                },
+                'Dimensions': {
+                    'UnitOfMeasurement': {
+                        'Code': dimensions_unit,
+                        # default unit: inches (IN)
+                    },
+                    'Length': dimensions['length'],
+                    'Width': dimensions['width'],
+                    'Height': dimensions['height'],
+                },
+                'PackageWeight': {
+                    'UnitOfMeasurement': {
+                        'Code': weight_unit,
+                        # default unit: pounds (LBS)
+                    },
+                    'Weight': weight,
+                },
+                'PackageServiceOptions': {},
+            })
+
         shipping_request = {
             'ShipmentConfirmRequest': {
                 'Request': {
@@ -285,6 +313,7 @@ class Shipment(object):
                             # 'ResidentialAddress': '',  # TODO: omit this if not residential
                         },
                     },
+                    'Package': packages_list,
                     'Service' : {  # TODO: add new service types
                         'Code': SHIPPING_SERVICES[shipping_service],
                         'Description': shipping_service,
@@ -295,29 +324,7 @@ class Shipment(object):
                                 'AccountNumber': ups_conn.shipper_number,
                             },
                         },
-                    },
-                    'Package': {
-                        'PackagingType': {
-                            'Code': '02',  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
-                        },
-                        'Dimensions': {
-                            'UnitOfMeasurement': {
-                                'Code': dimensions_unit,
-                                # default unit: inches (IN)
-                            },
-                            'Length': dimensions['length'],
-                            'Width': dimensions['width'],
-                            'Height': dimensions['height'],
-                        },
-                        'PackageWeight': {
-                            'UnitOfMeasurement': {
-                                'Code': weight_unit,
-                                # default unit: pounds (LBS)
-                            },
-                            'Weight': weight,
-                        },
-                        'PackageServiceOptions': {},
-                    },
+                    }
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
                     'LabelPrintMethod': {
@@ -413,10 +420,17 @@ class Shipment(object):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
 
-
     def get_label(self):
-        raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
-        return a2b_base64(raw_epl)
+        package_results = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']
+        label_list = []
+        if isinstance(package_results, dict):
+            raw_epl = package_results['LabelImage']['GraphicImage']
+            label_list.append(a2b_base64(raw_epl))
+        elif isinstance(package_results, list):
+            for label in package_results:
+                raw_epl = label['LabelImage']['GraphicImage']
+                label_list.append(a2b_base64(raw_epl))
+        return label_list
 
     def save_label(self, fd):
-        fd.write(self.get_label())
+        fd.write(self.get_label()[0])
