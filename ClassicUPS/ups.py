@@ -236,7 +236,10 @@ class Rates(object):
                 "Service": {
                     "Code": SHIPPING_SERVICES[shipping_service]
                 },
-                "Package": packages_list
+                "Package": packages_list,
+                "RateInformation": {
+                    "NegotiatedRatesIndicator": ""
+                }
             }
         }}
 
