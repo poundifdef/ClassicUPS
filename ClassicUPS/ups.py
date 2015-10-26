@@ -170,7 +170,35 @@ class TrackingInfo(object):
 
 class Rates(object):
 
-    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service):
+    def __init__(self, ups_conn, from_addr, to_addr, packages, shipping_service,
+                 dimensions_unit='IN', weight_unit='LBS'):
+
+        packages_list = []
+        for package in packages:
+            dimensions = package['dimensions']
+            weight = package['weight']
+            packages_list.append({
+                'PackagingType': {
+                    'Code': package.get('packaging_type') or '02'
+                },
+                'Dimensions': {
+                    'UnitOfMeasurement': {
+                        'Code': dimensions_unit,
+                        # default unit: inches (IN)
+                    },
+                    'Length': dimensions['length'],
+                    'Width': dimensions['width'],
+                    'Height': dimensions['height'],
+                },
+                'PackageWeight': {
+                    'UnitOfMeasurement': {
+                        'Code': weight_unit,
+                        # default unit: pounds (LBS)
+                    },
+                    'Weight': weight,
+                },
+                'PackageServiceOptions': {},
+            })
 
         rates_request = {"RatingServiceSelectionRequest": {
             "Request": {
@@ -179,23 +207,22 @@ class Rates(object):
                     'XpciVersion': '1.0001',
                 },
                 'RequestAction': 'Rate',
-                'RequestOption': 'Rate', 
+                'RequestOption': 'Rate',
             },
             "PickupType": {
                 "Code": "01"
             },
             "Shipment": {
                 "Shipper": {
+                    "ShipperNumber": ups_conn.shipper_number,
                     "Address": {
                         "PostalCode": from_addr["postal_code"],
-                        "StateProvinceCode": from_addr["state"],
                         "CountryCode": from_addr["country"]
                     }
                 },
                 "ShipTo": {
                     "Address": {
                         "PostalCode": to_addr["postal_code"],
-                        "StateProvinceCode": to_addr["state"],
                         "CountryCode": to_addr["country"],
                     }
                 },
@@ -203,36 +230,48 @@ class Rates(object):
                     "Address": {
                         "PostalCode": from_addr["postal_code"],
                         "City": from_addr["city"],
-                        "StateProvinceCode": from_addr["state"],
                         "CountryCode": from_addr["country"]
                     }
                 },
                 "Service": {
                     "Code": SHIPPING_SERVICES[shipping_service]
                 },
-                "Package": {
-                    "PackagingType": {
-                        "Code": "02"
-                    },
-                    "Dimensions": {
-                        "UnitOfMeasurement": {
-                            "Code": "IN"
-                        },
-                        "Length": dimensions["length"],
-                        "Width": dimensions["width"],
-                        "Height": dimensions["height"]
-                    },
-                    "PackageWeight": {
-                        "UnitOfMeasurement": {
-                            "Code": "LBS"
-                        },
-                        "Weight": weight
-                    }
-                }
+                "Package": packages_list
             }
         }}
 
+        if from_addr.get('state'):
+            shipping_request['RatingServiceSelectionRequest']['Shipment']['Shipper']['Address']['StateProvinceCode'] = from_addr['state']
+            shipping_request['RatingServiceSelectionRequest']['Shipment']['ShipFrom']['Address']['StateProvinceCode'] = from_addr['state']
+
+        if to_addr.get('state'):
+            shipping_request['RatingServiceSelectionRequest']['Shipment']['ShipTo']['Address']['StateProvinceCode'] = to_addr['state']
+
         self.rate_result = ups_conn._transmit_request('rate', rates_request)
+
+    @property
+    def total_charges(self):
+        response = self.rate_result.dict_response
+        return response['RatingServiceSelectionResponse']['RatedShipment'][
+            'TotalCharges']
+
+    @property
+    def transportation_charges(self):
+        response = self.rate_result.dict_response
+        return response['RatingServiceSelectionResponse']['RatedShipment'][
+            'TransportationCharges']
+
+    @property
+    def service_option_charges(self):
+        response = self.rate_result.dict_response
+        return response['RatingServiceSelectionResponse']['RatedShipment'][
+            'ServiceOptionsCharges']
+
+    @property
+    def service(self):
+        response = self.rate_result.dict_response
+        return response['RatingServiceSelectionResponse']['RatedShipment'][
+            'Service']
 
 
 class Shipment(object):
