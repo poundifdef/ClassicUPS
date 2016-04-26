@@ -420,6 +420,7 @@ class Shipment(object):
             else:
                 shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description
                 shipping_request['ShipmentConfirmRequest']['Shipment']['ReferenceNumber'] = reference_dict
+        shipping_request['ShipmentConfirmRequest']['Shipment']['Description'] = description or ''
 
         if from_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Shipper']['Address']['AddressLine2'] = from_addr['address2']
