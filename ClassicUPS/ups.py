@@ -36,13 +36,13 @@ class UPSConnection(object):
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate',
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate'
     }
     production_urls = {
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate',
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate'
     }
 
     def __init__(self, license_number, user_id, password, shipper_number=None,
@@ -170,7 +170,7 @@ class TrackingInfo(object):
 
 class Rates(object):
 
-    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service):
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight):
 
         rates_request = {"RatingServiceSelectionRequest": {
             "Request": {
@@ -178,8 +178,8 @@ class Rates(object):
                     'CustomerContext': 'rate request',
                     'XpciVersion': '1.0001',
                 },
-                'RequestAction': 'Rate',
-                'RequestOption': 'Rate', 
+                'RequestAction': 'Shop',
+                'RequestOption': 'Shop', 
             },
             "PickupType": {
                 "Code": "01"
@@ -206,9 +206,6 @@ class Rates(object):
                         "StateProvinceCode": from_addr["state"],
                         "CountryCode": from_addr["country"]
                     }
-                },
-                "Service": {
-                    "Code": SHIPPING_SERVICES[shipping_service]
                 },
                 "Package": {
                     "PackagingType": {
