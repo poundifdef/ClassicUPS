@@ -1,5 +1,5 @@
 import json
-import urllib
+import requests
 import xmltodict
 
 from binascii import a2b_base64
@@ -83,10 +83,9 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
-                .read()
+        resp = requests.post(url, data=xml.encode('ascii', 'xmlcharrefreplace'))
 
-        return UPSResult(resp)
+        return UPSResult(resp.text)
 
     def tracking_info(self, *args, **kwargs):
         return TrackingInfo(self, *args, **kwargs)
