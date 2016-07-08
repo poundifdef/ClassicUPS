@@ -1,11 +1,34 @@
 import json
-import urllib
+import requests
 import xmltodict
 
 from binascii import a2b_base64
 from datetime import datetime
 from dict2xml import dict2xml
 
+SHIPPING_SERVICES = {
+    '1dayair': '01',  # Next Day Air
+    '2dayair': '02',  # 2nd Day Air
+    'ground': '03',  # Ground
+    'express': '07',  # Express
+    'worldwide_expedited': '08',  # Expedited
+    'standard': '11',  # UPS Standard
+    '3_day_select': '12',  # 3 Day Select
+    'next_day_air_saver': '13',  # Next Day Air Saver
+    'next_day_air_early_am': '14',  # Next Day Air Early AM
+    'express_plus': '54',  # Express Plus
+    '2nd_day_air_am': '59',  # 2nd Day Air A.M.
+    'ups_saver': '65',  # UPS Saver.
+    'ups_today_standard': '82',  # UPS Today Standard
+    'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
+    'ups_today_intercity': '84',  # UPS Today Intercity
+    'ups_today_express': '85',  # UPS Today Express
+    'ups_today_express_saver': '86',  # UPS Today Express Saver.
+}
+
+class UPSError(Exception):
+    def __init__(self, message):
+        self.message = message
 
 class UPSConnection(object):
 
@@ -13,11 +36,13 @@ class UPSConnection(object):
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate'
     }
     production_urls = {
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate'
     }
 
     def __init__(self, license_number, user_id, password, shipper_number=None,
@@ -58,16 +83,21 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
-                .read()
+        resp = requests.post(url, data=xml.encode('ascii', 'xmlcharrefreplace'))
 
-        return UPSResult(resp)
+        return UPSResult(resp.text)
 
     def tracking_info(self, *args, **kwargs):
         return TrackingInfo(self, *args, **kwargs)
 
     def create_shipment(self, *args, **kwargs):
         return Shipment(self, *args, **kwargs)
+
+    def create_rates(self, *args, **kwargs):
+        return Rates(self, *args, **kwargs)
+
+    def check_shipping_valid(self, *args, **kwards):
+        return ShippingValid(self, *args, **kwargs)
 
 class UPSResult(object):
 
@@ -81,6 +111,10 @@ class UPSResult(object):
     @property
     def dict_response(self):
         return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
+
+class ShippingValid(object):
+    def __init__(self, ups_conn, to_addr):
+        self.result = ""
 
 class TrackingInfo(object):
 
@@ -133,26 +167,71 @@ class TrackingInfo(object):
 
         return len(in_transit) > 0
 
+class Rates(object):
+
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight):
+
+        rates_request = {"RatingServiceSelectionRequest": {
+            "Request": {
+                'TransactionReference': {
+                    'CustomerContext': 'rate request',
+                    'XpciVersion': '1.0001',
+                },
+                'RequestAction': 'Shop',
+                'RequestOption': 'Shop', 
+            },
+            "PickupType": {
+                "Code": "01"
+            },
+            "Shipment": {
+                "Shipper": {
+                    "Address": {
+                        "PostalCode": from_addr["postal_code"],
+                        "StateProvinceCode": from_addr["state"],
+                        "CountryCode": from_addr["country"]
+                    }
+                },
+                "ShipTo": {
+                    "Address": {
+                        "PostalCode": to_addr["postal_code"],
+                        "StateProvinceCode": to_addr["state"],
+                        "CountryCode": to_addr["country"],
+                    }
+                },
+                "ShipFrom": {
+                    "Address": {
+                        "PostalCode": from_addr["postal_code"],
+                        "City": from_addr["city"],
+                        "StateProvinceCode": from_addr["state"],
+                        "CountryCode": from_addr["country"]
+                    }
+                },
+                "Package": {
+                    "PackagingType": {
+                        "Code": "02"
+                    },
+                    "Dimensions": {
+                        "UnitOfMeasurement": {
+                            "Code": "IN"
+                        },
+                        "Length": dimensions["length"],
+                        "Width": dimensions["width"],
+                        "Height": dimensions["height"]
+                    },
+                    "PackageWeight": {
+                        "UnitOfMeasurement": {
+                            "Code": "LBS"
+                        },
+                        "Weight": weight
+                    }
+                }
+            }
+        }}
+
+        self.rate_result = ups_conn._transmit_request('rate', rates_request)
+
+
 class Shipment(object):
-    SHIPPING_SERVICES = {
-        '1dayair': '01',  # Next Day Air
-        '2dayair': '02',  # 2nd Day Air
-        'ground': '03',  # Ground
-        'express': '07',  # Express
-        'worldwide_expedited': '08',  # Expedited
-        'standard': '11',  # UPS Standard
-        '3_day_select': '12',  # 3 Day Select
-        'next_day_air_saver': '13',  # Next Day Air Saver
-        'next_day_air_early_am': '14',  # Next Day Air Early AM
-        'express_plus': '54',  # Express Plus
-        '2nd_day_air_am': '59',  # 2nd Day Air A.M.
-        'ups_saver': '65',  # UPS Saver.
-        'ups_today_standard': '82',  # UPS Today Standard
-        'ups_today_dedicated_courier': '83',  # UPS Today Dedicated Courier
-        'ups_today_intercity': '84',  # UPS Today Intercity
-        'ups_today_express': '85',  # UPS Today Express
-        'ups_today_express_saver': '86',  # UPS Today Express Saver.
-    }
 
     DCIS_TYPES = {
         'no_signature': 1,
@@ -161,8 +240,8 @@ class Shipment(object):
         'usps_delivery_confiratmion': 4,
     }
 
-    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
-                 file_format='EPL', reference_numbers=None, shipping_service='ground',
+    def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight, shipping_service, reference_numbers,
+                 file_format='EPL', 
                  description='', dimensions_unit='IN', weight_unit='LBS',
                  delivery_confirmation=None):
 
@@ -205,7 +284,7 @@ class Shipment(object):
                         },
                     },
                     'Service' : {  # TODO: add new service types
-                        'Code': self.SHIPPING_SERVICES[shipping_service],
+                        'Code': SHIPPING_SERVICES[shipping_service],
                         'Description': shipping_service,
                     },
                     'PaymentInformation': {  # TODO: Other payment information
@@ -297,7 +376,8 @@ class Shipment(object):
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
-            raise Exception(error_string)
+            print error_string
+            raise UPSError(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
@@ -324,6 +404,7 @@ class Shipment(object):
     def tracking_number(self):
         tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
+
 
     def get_label(self):
         raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']['LabelImage']['GraphicImage']
