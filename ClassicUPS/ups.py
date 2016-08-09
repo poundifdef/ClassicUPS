@@ -1,5 +1,5 @@
 import json
-import urllib
+import requests
 import xmltodict
 
 from binascii import a2b_base64
@@ -36,13 +36,13 @@ class UPSConnection(object):
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate',
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate'
     }
     production_urls = {
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate',
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate'
     }
 
     def __init__(self, license_number, user_id, password, shipper_number=None,
@@ -83,10 +83,9 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
-                .read()
+        resp = requests.post(url, data=xml.encode('ascii', 'xmlcharrefreplace'))
 
-        return UPSResult(resp)
+        return UPSResult(resp.text)
 
     def tracking_info(self, *args, **kwargs):
         return TrackingInfo(self, *args, **kwargs)
@@ -170,7 +169,7 @@ class TrackingInfo(object):
 
 class Rates(object):
 
-    def __init__(self, ups_conn, from_addr, to_addr, packages, shipping_service,
+    def __init__(self, ups_conn, from_addr, to_addr, packages,
                  dimensions_unit='IN', weight_unit='LBS'):
 
         packages_list = []
@@ -206,11 +205,8 @@ class Rates(object):
                     'CustomerContext': 'rate request',
                     'XpciVersion': '1.0001',
                 },
-                'RequestAction': 'Rate',
-                'RequestOption': 'Rate',
-            },
-            "PickupType": {
-                "Code": "01"
+                'RequestAction': 'Shop',
+                'RequestOption': 'Shop',
             },
             "Shipment": {
                 "Shipper": {
@@ -233,11 +229,8 @@ class Rates(object):
                         "CountryCode": from_addr["country"]
                     }
                 },
-                "Service": {
-                    "Code": SHIPPING_SERVICES[shipping_service]
-                },
                 "Package": packages_list,
-                "RateInformation": {
+                "ShipmentRatingOptions": {
                     "NegotiatedRatesIndicator": ""
                 }
             }
@@ -258,30 +251,6 @@ class Rates(object):
                 'RatingServiceSelectionResponse']['Response']['Error'][
                 'ErrorDescription']
             raise UPSError(error_string)
-
-    @property
-    def total_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'TotalCharges']
-
-    @property
-    def transportation_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'TransportationCharges']
-
-    @property
-    def service_option_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'ServiceOptionsCharges']
-
-    @property
-    def service(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'Service']
 
 
 class Shipment(object):

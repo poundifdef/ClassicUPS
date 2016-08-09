@@ -12,7 +12,8 @@ setup(
     keywords=['UPS'],
     install_requires=[
         'dict2xml==1.0',
-        'xmltodict==0.4.2'
+        'xmltodict==0.4.2',
+        'requests>=2.5.1'
     ],
     classifiers=[
         'Programming Language :: Python',
