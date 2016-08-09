@@ -208,9 +208,6 @@ class Rates(object):
                 'RequestAction': 'Shop',
                 'RequestOption': 'Shop',
             },
-            "PickupType": {
-                "Code": "01"
-            },
             "Shipment": {
                 "Shipper": {
                     "ShipperNumber": ups_conn.shipper_number,
@@ -254,30 +251,6 @@ class Rates(object):
                 'RatingServiceSelectionResponse']['Response']['Error'][
                 'ErrorDescription']
             raise UPSError(error_string)
-
-    @property
-    def total_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'TotalCharges']
-
-    @property
-    def transportation_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'TransportationCharges']
-
-    @property
-    def service_option_charges(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'ServiceOptionsCharges']
-
-    @property
-    def service(self):
-        response = self.rate_result.dict_response
-        return response['RatingServiceSelectionResponse']['RatedShipment'][
-            'Service']
 
 
 class Shipment(object):
