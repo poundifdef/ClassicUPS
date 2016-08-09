@@ -1,5 +1,5 @@
 import json
-import urllib
+import requests
 import xmltodict
 
 from binascii import a2b_base64
@@ -36,13 +36,13 @@ class UPSConnection(object):
         'track': 'https://wwwcie.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://wwwcie.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://wwwcie.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate',
+        'rate': 'https://wwwcie.ups.com/ups.app/xml/Rate'
     }
     production_urls = {
         'track': 'https://onlinetools.ups.com/ups.app/xml/Track',
         'ship_confirm': 'https://onlinetools.ups.com/ups.app/xml/ShipConfirm',
         'ship_accept': 'https://onlinetools.ups.com/ups.app/xml/ShipAccept',
-        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate',
+        'rate': 'https://onlinetools.ups.com/ups.app/xml/Rate'
     }
 
     def __init__(self, license_number, user_id, password, shipper_number=None,
@@ -83,10 +83,9 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
-                .read()
+        resp = requests.post(url, data=xml.encode('ascii', 'xmlcharrefreplace'))
 
-        return UPSResult(resp)
+        return UPSResult(resp.text)
 
     def tracking_info(self, *args, **kwargs):
         return TrackingInfo(self, *args, **kwargs)
@@ -206,8 +205,8 @@ class Rates(object):
                     'CustomerContext': 'rate request',
                     'XpciVersion': '1.0001',
                 },
-                'RequestAction': 'Rate',
-                'RequestOption': 'Rate',
+                'RequestAction': 'Shop',
+                'RequestOption': 'Shop',
             },
             "PickupType": {
                 "Code": "01"
@@ -232,9 +231,6 @@ class Rates(object):
                         "City": from_addr["city"],
                         "CountryCode": from_addr["country"]
                     }
-                },
-                "Service": {
-                    "Code": SHIPPING_SERVICES[shipping_service]
                 },
                 "Package": packages_list,
                 "RateInformation": {
