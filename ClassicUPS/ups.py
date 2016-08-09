@@ -169,7 +169,7 @@ class TrackingInfo(object):
 
 class Rates(object):
 
-    def __init__(self, ups_conn, from_addr, to_addr, packages, shipping_service,
+    def __init__(self, ups_conn, from_addr, to_addr, packages,
                  dimensions_unit='IN', weight_unit='LBS'):
 
         packages_list = []
@@ -233,7 +233,7 @@ class Rates(object):
                     }
                 },
                 "Package": packages_list,
-                "RateInformation": {
+                "ShipmentRatingOptions": {
                     "NegotiatedRatesIndicator": ""
                 }
             }
