@@ -230,7 +230,7 @@ class Rates(object):
                     }
                 },
                 "Package": packages_list,
-                "ShipmentRatingOptions": {
+                "RateInformation": {
                     "NegotiatedRatesIndicator": ""
                 }
             }
