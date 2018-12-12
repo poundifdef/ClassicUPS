@@ -346,7 +346,8 @@ class Shipment(object):
                                 'AccountNumber': ups_conn.shipper_number,
                             },
                         },
-                    }
+                    },
+                    'ShipmentServiceOptions': {},
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
                     'LabelPrintMethod': {
@@ -363,6 +364,48 @@ class Shipment(object):
                 },
             },
         }
+
+        if to_addr.get('email'):
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {
+                'ShipmentServiceOptions': [
+                    {
+                        'Notification': {
+                            'NotificationCode': 6,
+                            'Email': {
+                                'EMailAddress': to_addr['email']
+                            },
+                            'Locale': {
+                                'Language': 'SPA',
+                                'Dialect': 97,
+                            }
+                        }
+                    },
+                    {
+                        'Notification': {
+                            'NotificationCode': 8,
+                            'Email': {
+                                'EMailAddress': to_addr['email']
+                            },
+                            'Locale': {
+                                'Language': 'SPA',
+                                'Dialect': 97,
+                            }
+                        }
+                    },
+                    {
+                        'Notification': {
+                            'NotificationCode': 7,
+                            'Email': {
+                                'EMailAddress': to_addr['email']
+                            },
+                            'Locale': {
+                                'Language': 'SPA',
+                                'Dialect': 97,
+                            }
+                        }
+                    },
+                ]
+            }
 
         if delivery_confirmation:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
