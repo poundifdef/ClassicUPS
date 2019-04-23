@@ -237,6 +237,7 @@ class Shipment(object):
                         },
                         'PackageServiceOptions': {},
                     },
+                    'Description': description,
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
                     'LabelPrintMethod': {
