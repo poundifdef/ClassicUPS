@@ -163,7 +163,7 @@ class Shipment(object):
 
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
-                 description='', dimensions_unit='IN', weight_unit='LBS',
+                 description='', dimensions_unit='IN', weight_unit='LBS', packaging_type='02',
                  delivery_confirmation=None):
 
         self.file_format = file_format
@@ -217,7 +217,7 @@ class Shipment(object):
                     },
                     'Package': {
                         'PackagingType': {
-                            'Code': '02',  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
+                            'Code': packaging_type,  # Box (see http://www.ups.com/worldshiphelp/WS11/ENU/AppHelp/Codes/Package_Type_Codes.htm)
                         },
                         'Dimensions': {
                             'UnitOfMeasurement': {
