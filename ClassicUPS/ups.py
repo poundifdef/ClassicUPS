@@ -269,7 +269,7 @@ class Shipment(object):
     def __init__(self, ups_conn, from_addr, to_addr, packages, shipping_service, reference_numbers=None,
                  file_format='EPL',
                  description='', dimensions_unit='IN', weight_unit='LBS',
-                 delivery_confirmation=None):
+                 delivery_confirmation=None, ItemizedPaymentInformation=None):
 
         self.file_format = file_format
 
@@ -348,6 +348,7 @@ class Shipment(object):
                         },
                     },
                     'ShipmentServiceOptions': {},
+                    'ItemizedPaymentInformation': {},
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
                     'LabelPrintMethod': {
@@ -367,51 +368,61 @@ class Shipment(object):
 
         if to_addr.get('email'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {
-                'ShipmentServiceOptions': [
-                    {
-                        'Notification': {
-                            'NotificationCode': 6,
-                            'Email': {
-                                'EMailAddress': to_addr['email']
-                            },
-                            'Locale': {
-                                'Language': 'SPA',
-                                'Dialect': 97,
-                            }
-                        }
+                'Notification': {
+                    'NotificationCode': 6,
+                    'EMailMessage': {
+                        'EMailAddress': to_addr['email']
                     },
-                    {
-                        'Notification': {
-                            'NotificationCode': 8,
-                            'Email': {
-                                'EMailAddress': to_addr['email']
-                            },
-                            'Locale': {
-                                'Language': 'SPA',
-                                'Dialect': 97,
-                            }
-                        }
+                    'Locale': {
+                        'Language': 'SPA',
+                        'Dialect': 97,
+                    }
+                },
+                'Notification': {
+                    'NotificationCode': 8,
+                    'EMailMessage': {
+                        'EMailMessage': to_addr['email']
                     },
-                    {
-                        'Notification': {
-                            'NotificationCode': 7,
-                            'Email': {
-                                'EMailAddress': to_addr['email']
-                            },
-                            'Locale': {
-                                'Language': 'SPA',
-                                'Dialect': 97,
-                            }
-                        }
+                    'Locale': {
+                        'Language': 'SPA',
+                        'Dialect': 97,
+                    }
+                },
+                'Notification': {
+                    'NotificationCode': 7,
+                    'EMailMessage': {
+                        'EMailMessage': to_addr['email']
                     },
-                ]
+                    'Locale': {
+                        'Language': 'SPA',
+                        'Dialect': 97,
+                    }
+                },
             }
 
         if delivery_confirmation:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
                 'DCISType': self.DCIS_TYPES[delivery_confirmation]
             }
-
+        if ItemizedPaymentInformation:
+            # shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['type'] = ItemizedPaymentInformation
+            # shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['BillShipper'] = ups_conn.shipper_number
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation'] = {
+                        'ShipmentCharge': {
+                            'type': ItemizedPaymentInformation,
+                            'BillShipper': {
+                                'AccountNumber':  ups_conn.shipper_number
+                            },
+                        }
+                    }
+            shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation'] = {}
+        else:
+            shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation'] = {
+                        'Prepaid': {
+                            'BillShipper': {
+                                'AccountNumber': ups_conn.shipper_number,
+                            },
+                        }}
         if reference_numbers:
             reference_dict = []
             for ref_code, ref_number in enumerate(reference_numbers):
