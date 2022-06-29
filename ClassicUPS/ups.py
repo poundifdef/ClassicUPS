@@ -74,7 +74,6 @@ class UPSConnection(object):
             access_request_xml=dict2xml(access_request),
             api_xml=dict2xml(ups_request),
         )
-
         return xml
 
     def _transmit_request(self, url_action, ups_request):
@@ -381,7 +380,7 @@ class Shipment(object):
                 'Notification': {
                     'NotificationCode': 8,
                     'EMailMessage': {
-                        'EMailMessage': to_addr['email']
+                        'EMailAddress': to_addr['email']
                     },
                     'Locale': {
                         'Language': 'SPA',
@@ -391,7 +390,7 @@ class Shipment(object):
                 'Notification': {
                     'NotificationCode': 7,
                     'EMailMessage': {
-                        'EMailMessage': to_addr['email']
+                        'EMailAddress': to_addr['email']
                     },
                     'Locale': {
                         'Language': 'SPA',
@@ -404,25 +403,28 @@ class Shipment(object):
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
                 'DCISType': self.DCIS_TYPES[delivery_confirmation]
             }
-        if ItemizedPaymentInformation:
-            # shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['type'] = ItemizedPaymentInformation
-            # shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['BillShipper'] = ups_conn.shipper_number
-            shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation'] = {
-                        'ShipmentCharge': {
-                            'type': ItemizedPaymentInformation,
-                            'BillShipper': {
-                                'AccountNumber':  ups_conn.shipper_number
-                            },
-                        }
-                    }
-            shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation'] = {}
+        if ItemizedPaymentInformation == "02":
+            types = ['01',ItemizedPaymentInformation]
+            ShipmentCharge = []
+            for type_ups in types:
+                ShipmentCharge.append({
+                                'Type': type_ups,
+                                'BillShipper': {
+                                    'AccountNumber':  ups_conn.shipper_number,
+                                },
+                        })
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['ShipmentCharge'] = ShipmentCharge
         else:
-            shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation'] = {
-                        'Prepaid': {
-                            'BillShipper': {
-                                'AccountNumber': ups_conn.shipper_number,
-                            },
-                        }}
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation'] = {
+                'ShipmentCharge': {
+                    'Type': ItemizedPaymentInformation,
+                    'BillShipper': {
+                        'AccountNumber':  ups_conn.shipper_number
+                    },
+                },
+            }
+        if ItemizedPaymentInformation:
+            del shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation']
         if reference_numbers:
             reference_dict = []
             for ref_code, ref_number in enumerate(reference_numbers):
