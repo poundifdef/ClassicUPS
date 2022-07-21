@@ -414,7 +414,7 @@ class Shipment(object):
                                 },
                         })
             shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['ShipmentCharge'] = ShipmentCharge
-        else:
+        elif ItemizedPaymentInformation != "02":
             shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation'] = {
                 'ShipmentCharge': {
                     'Type': ItemizedPaymentInformation,
@@ -425,6 +425,8 @@ class Shipment(object):
             }
         if ItemizedPaymentInformation:
             del shipping_request['ShipmentConfirmRequest']['Shipment']['PaymentInformation']
+        else:
+            del shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']
         if reference_numbers:
             reference_dict = []
             for ref_code, ref_number in enumerate(reference_numbers):
