@@ -366,9 +366,11 @@ class Shipment(object):
         }
 
         if to_addr.get('email'):
-            shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {
-                'Notification': {
-                    'NotificationCode': 6,
+            notifications_codes = ['6','8','7']
+            notificationsShipment = []
+            for notification_code in notifications_codes:
+                notificationsShipment.append({
+                    'NotificationCode': int(notification_code),
                     'EMailMessage': {
                         'EMailAddress': to_addr['email']
                     },
@@ -376,29 +378,40 @@ class Shipment(object):
                         'Language': 'SPA',
                         'Dialect': 97,
                     }
-                },
-                'Notification': {
-                    'NotificationCode': 8,
-                    'EMailMessage': {
-                        'EMailAddress': to_addr['email']
-                    },
-                    'Locale': {
-                        'Language': 'SPA',
-                        'Dialect': 97,
-                    }
-                },
-                'Notification': {
-                    'NotificationCode': 7,
-                    'EMailMessage': {
-                        'EMailAddress': to_addr['email']
-                    },
-                    'Locale': {
-                        'Language': 'SPA',
-                        'Dialect': 97,
-                    }
-                },
-            }
-
+                })
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions']['Notification'] = notificationsShipment
+            # shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {
+            #     'Notification': {
+            #         'NotificationCode': 6,
+            #         'EMailMessage': {
+            #             'EMailAddress': to_addr['email']
+            #         },
+            #         'Locale': {
+            #             'Language': 'SPA',
+            #             'Dialect': 97,
+            #         }
+            #     },
+            #     'Notification': {
+            #         'NotificationCode': 8,
+            #         'EMailMessage': {
+            #             'EMailAddress': to_addr['email']
+            #         },
+            #         'Locale': {
+            #             'Language': 'SPA',
+            #             'Dialect': 97,
+            #         }
+            #     },
+            #     'Notification': {
+            #         'NotificationCode': 7,
+            #         'EMailMessage': {
+            #             'EMailAddress': to_addr['email']
+            #         },
+            #         'Locale': {
+            #             'Language': 'SPA',
+            #             'Dialect': 97,
+            #         }
+            #     },
+            # }
         if delivery_confirmation:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
                 'DCISType': self.DCIS_TYPES[delivery_confirmation]
