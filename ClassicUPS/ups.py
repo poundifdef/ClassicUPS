@@ -380,38 +380,6 @@ class Shipment(object):
                     }
                 })
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions']['Notification'] = notificationsShipment
-            # shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {
-            #     'Notification': {
-            #         'NotificationCode': 6,
-            #         'EMailMessage': {
-            #             'EMailAddress': to_addr['email']
-            #         },
-            #         'Locale': {
-            #             'Language': 'SPA',
-            #             'Dialect': 97,
-            #         }
-            #     },
-            #     'Notification': {
-            #         'NotificationCode': 8,
-            #         'EMailMessage': {
-            #             'EMailAddress': to_addr['email']
-            #         },
-            #         'Locale': {
-            #             'Language': 'SPA',
-            #             'Dialect': 97,
-            #         }
-            #     },
-            #     'Notification': {
-            #         'NotificationCode': 7,
-            #         'EMailMessage': {
-            #             'EMailAddress': to_addr['email']
-            #         },
-            #         'Locale': {
-            #             'Language': 'SPA',
-            #             'Dialect': 97,
-            #         }
-            #     },
-            # }
         if delivery_confirmation:
             shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['DeliveryConfirmation'] = {
                 'DCISType': self.DCIS_TYPES[delivery_confirmation]
