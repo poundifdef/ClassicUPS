@@ -1,3 +1,5 @@
+# Update, 9/2022: Looking for a maintainer! If you're interested, please send me an email.
+
 ClassicUPS: A Useful UPS Library
 ================================
 
