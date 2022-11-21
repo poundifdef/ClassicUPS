@@ -50,8 +50,8 @@ Check the delivery date of a package.
 .. code-block:: python
 
     tracking = ups.tracking_info('1Z12345E0291980793')
-    print tracking.in_transit
-    print tracking.delivered
+    print(tracking.in_transit)
+    print(tracking.delivered)
 
 Create shipment and save shipping label as GIF file:
 
@@ -87,8 +87,8 @@ Create shipment and save shipping label as GIF file:
                                    file_format='GIF')
 
     # Print information about our shipment
-    print shipment.cost
-    print shipment.tracking_number
+    print(shipment.cost)
+    print(shipment.tracking_number)
 
     # Save the shipping label to print, email, etc
     shipment.save_label(open('label.gif', 'wb'))

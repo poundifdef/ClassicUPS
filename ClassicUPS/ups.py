@@ -1,10 +1,10 @@
 import json
-import urllib
+import urllib.request
 import xmltodict
 
 from binascii import a2b_base64
 from datetime import datetime
-from dict2xml import dict2xml
+from dicttoxml import dicttoxml
 
 
 class UPSConnection(object):
@@ -39,15 +39,13 @@ class UPSConnection(object):
         }
 
         xml = u'''
-        <?xml version="1.0"?>
         {access_request_xml}
 
-        <?xml version="1.0"?>
         {api_xml}
         '''.format(
             request_type=url_action,
-            access_request_xml=dict2xml(access_request),
-            api_xml=dict2xml(ups_request),
+            access_request_xml=dicttoxml(access_request, root=False),
+            api_xml=dicttoxml(ups_request, root=False),
         )
 
         return xml
@@ -58,8 +56,9 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
-                .read()
+
+        with urllib.request.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace')) as url:
+            resp = url.read()
 
         return UPSResult(resp)
 
