@@ -26,9 +26,11 @@ SHIPPING_SERVICES = {
     'ups_today_express_saver': '86',  # UPS Today Express Saver.
 }
 
+
 class UPSError(Exception):
     def __init__(self, message):
         self.message = message
+
 
 class UPSConnection(object):
 
@@ -85,7 +87,8 @@ class UPSConnection(object):
 
         resp = requests.post(
             url,
-            data=xml.replace('&', u'&#38;').encode('ascii', 'xmlcharrefreplace')
+            data=xml.replace('&', u'&#38;').encode(
+                'ascii', 'xmlcharrefreplace')
         )
 
         return UPSResult(resp.text)
@@ -102,6 +105,7 @@ class UPSConnection(object):
     def check_shipping_valid(self, *args, **kwards):
         return ShippingValid(self, *args, **kwargs)
 
+
 class UPSResult(object):
 
     def __init__(self, response):
@@ -115,9 +119,11 @@ class UPSResult(object):
     def dict_response(self):
         return json.loads(json.dumps(xmltodict.parse(self.xml_response)))
 
+
 class ShippingValid(object):
     def __init__(self, ups_conn, to_addr):
         self.result = ""
+
 
 class TrackingInfo(object):
 
@@ -150,7 +156,7 @@ class TrackingInfo(object):
         #   M: Manifest
 
         shipment_activities = (self.result.dict_response['TrackResponse']
-                                      ['Shipment']['Package']['Activity'])
+                               ['Shipment']['Package']['Activity'])
         if type(shipment_activities) != list:
             shipment_activities = [shipment_activities]
 
@@ -166,9 +172,10 @@ class TrackingInfo(object):
     @property
     def in_transit(self):
         in_transit = [x for x in self.shipment_activities
-                     if x['Status']['StatusType']['Code'] == 'I']
+                      if x['Status']['StatusType']['Code'] == 'I']
 
         return len(in_transit) > 0
+
 
 class Rates(object):
 
@@ -277,6 +284,7 @@ class Shipment(object):
             dimensions = package['dimensions']
             weight = package['weight']
             packages_list.append({
+                'Description': package.get('description') or '',
                 'PackagingType': {
                     'Code': package.get('packaging_type') or '02'
                 },
@@ -322,7 +330,7 @@ class Shipment(object):
                             'PostalCode': from_addr['postal_code'],
                         },
                     },
-                    'ShipTo' : {
+                    'ShipTo': {
                         'CompanyName': to_addr['name'],
                         'AttentionName': to_addr.get('attn') if to_addr.get('attn') else to_addr['name'],
                         'PhoneNumber': to_addr['phone'],
@@ -335,7 +343,7 @@ class Shipment(object):
                         },
                     },
                     'Package': packages_list,
-                    'Service' : {  # TODO: add new service types
+                    'Service': {  # TODO: add new service types
                         'Code': SHIPPING_SERVICES[shipping_service],
                         'Description': shipping_service,
                     },
@@ -366,7 +374,7 @@ class Shipment(object):
         }
 
         if to_addr.get('email'):
-            notifications_codes = ['6','8','7']
+            notifications_codes = ['6', '8', '7']
             notificationsShipment = []
             for notification_code in notifications_codes:
                 notificationsShipment.append({
@@ -385,15 +393,15 @@ class Shipment(object):
                 'DCISType': self.DCIS_TYPES[delivery_confirmation]
             }
         if ItemizedPaymentInformation == "02":
-            types = ['01',ItemizedPaymentInformation]
+            types = ['01', ItemizedPaymentInformation]
             ShipmentCharge = []
             for type_ups in types:
                 ShipmentCharge.append({
-                                'Type': type_ups,
-                                'BillShipper': {
-                                    'AccountNumber':  ups_conn.shipper_number,
-                                },
-                        })
+                    'Type': type_ups,
+                    'BillShipper': {
+                        'AccountNumber':  ups_conn.shipper_number,
+                    },
+                })
             shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation']['ShipmentCharge'] = ShipmentCharge
         elif ItemizedPaymentInformation != "02":
             shipping_request['ShipmentConfirmRequest']['Shipment']['ItemizedPaymentInformation'] = {
@@ -425,7 +433,7 @@ class Shipment(object):
                     'Code': ref_code,
                     'Value': ref_number
                 })
-            #reference_dict[0]['BarCodeIndicator'] = '1'
+            # reference_dict[0]['BarCodeIndicator'] = '1'
 
             if from_addr['country'] == 'US' and to_addr['country'] == 'US':
                 shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['ReferenceNumber'] = reference_dict
@@ -449,13 +457,16 @@ class Shipment(object):
         if to_addr.get('state'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['StateProvinceCode'] = to_addr['state']
 
-        self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
+        self.confirm_result = ups_conn._transmit_request(
+            'ship_confirm', shipping_request)
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
-            error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
+            error_string = self.confirm_result.dict_response[
+                'ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
             raise UPSError(error_string)
 
-        confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
+        confirm_result_digest = self.confirm_result.dict_response[
+            'ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
             'ShipmentAcceptRequest': {
                 'Request': {
@@ -469,20 +480,24 @@ class Shipment(object):
             }
         }
 
-        self.accept_result = ups_conn._transmit_request('ship_accept', ship_accept_request)
+        self.accept_result = ups_conn._transmit_request(
+            'ship_accept', ship_accept_request)
 
     @property
     def cost(self):
-        total_cost = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentCharges']['TotalCharges']['MonetaryValue']
+        total_cost = self.confirm_result.dict_response['ShipmentConfirmResponse'][
+            'ShipmentCharges']['TotalCharges']['MonetaryValue']
         return float(total_cost)
 
     @property
     def tracking_number(self):
-        tracking_number = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentIdentificationNumber']
+        tracking_number = self.confirm_result.dict_response[
+            'ShipmentConfirmResponse']['ShipmentIdentificationNumber']
         return tracking_number
 
     def get_label(self):
-        package_results = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['PackageResults']
+        package_results = self.accept_result.dict_response[
+            'ShipmentAcceptResponse']['ShipmentResults']['PackageResults']
         label_list = []
         if isinstance(package_results, dict):
             raw_epl = package_results['LabelImage']['GraphicImage']
